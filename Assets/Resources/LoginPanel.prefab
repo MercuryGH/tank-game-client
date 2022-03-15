@@ -1111,7 +1111,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u300AUnity3D\u7F51\u7EDC\u6E38\u620F\u5B9E\u6218\uFF08\u7B2C\u4E8C\u7248\uFF09\u300B  
+  m_Text: "\u53C2\u8003\u6587\u732E\uFF1A\u300AUnity3D\u7F51\u7EDC\u6E38\u620F\u5B9E\u6218\uFF08\u7B2C\u4E8C\u7248\uFF09\u300B  
     \u7F57\u57F9\u7FBD \u8457\n"
 --- !u!1 &1768808652334328
 GameObject:

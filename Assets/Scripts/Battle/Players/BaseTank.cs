@@ -8,7 +8,7 @@ public class BaseTank : MonoBehaviour
     protected Rigidbody rigidBody;
 
     public float steer = 30; // 转向速度
-    public float speed = 6f; // 移动速度
+    public float speed = 20f; // 移动速度
     public float turretSpeed = 30f; // 炮塔旋转速度
     public Transform turret; // 炮塔
     public Transform gun; // 炮管
@@ -42,15 +42,18 @@ public class BaseTank : MonoBehaviour
         skin.transform.parent = this.transform;
         skin.transform.localPosition = Vector3.zero;
         skin.transform.localEulerAngles = Vector3.zero;
+
         // 物理
         rigidBody = gameObject.AddComponent<Rigidbody>();
         BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
         boxCollider.center = new Vector3(0, 2.5f, 1.47f);
         boxCollider.size = new Vector3(7, 5, 12);
+
         // 炮塔炮管
         turret = skin.transform.Find("Turret");
         gun = turret.transform.Find("Gun");
         firePoint = gun.transform.Find("FirePoint");
+
         // 轮子履带
         wheels = skin.transform.Find("Wheels");
         track = skin.transform.Find("Track");
@@ -86,15 +89,17 @@ public class BaseTank : MonoBehaviour
     }
 
     //轮子旋转，履带滚动
-    public void WheelUpdate(float axis)
+    protected void WheelUpdate(float axis)
     {
         //计算速度
         float v = Time.deltaTime * speed * axis * 100;
+
         //旋转每个轮子
         foreach (Transform wheel in wheels)
         {
             wheel.Rotate(new Vector3(v, 0, 0), Space.Self);
         }
+
         //滚动履带
         MeshRenderer mr = track.gameObject.GetComponent<MeshRenderer>();
         if (mr == null)

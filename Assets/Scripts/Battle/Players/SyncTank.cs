@@ -4,102 +4,116 @@ using UnityEngine;
 
 public class SyncTank : BaseTank
 {
-    //预测信息，哪个时间到达哪个位置
+    // 上次收到的位置、旋转、炮塔、炮管信息
     private Vector3 lastPos;
     private Vector3 lastRot;
+    private float lastTurretY;
+    private float lastGunX;
+    // 上次收到同步数据的时刻
+    private float lastSyncTime;
+
+    // 由上次同步数据，预测的位置、旋转、炮塔、炮管信息
     private Vector3 forecastPos;
     private Vector3 forecastRot;
-    private float lastTurretY;
     private float forecastTurretY;
-    private float lastGunX;
     private float forecastGunX;
-    private float forecastTime;
 
-    //重写Init
     public override void Init(string skinPath)
     {
         base.Init(skinPath);
-        //不受物理运动影响
+
+        // SyncTank 不受物理运动影响，节省算力也避免bug
         rigidBody.constraints = RigidbodyConstraints.FreezeAll;
         rigidBody.useGravity = false;
-        //初始化预测信息
+
+        // 初始化预测信息
         lastPos = transform.position;
         lastRot = transform.eulerAngles;
+        lastTurretY = turret.localEulerAngles.y;
+        lastSyncTime = Time.time;
+        lastGunX = gun.localEulerAngles.x;
+
         forecastPos = transform.position;
         forecastRot = transform.eulerAngles;
-        lastTurretY = turret.localEulerAngles.y;
         forecastTurretY = turret.localEulerAngles.y;
-        lastGunX = gun.localEulerAngles.x;
         forecastGunX = gun.localEulerAngles.x;
-        forecastTime = Time.time;
     }
 
     new void Update()
     {
         base.Update();
-        //更新位置
         ForecastUpdate();
     }
 
-    //移动同步
+    // 位置同步，使用预测算法
     public void SyncPos(MsgSyncTank msg)
     {
-        //预测位置
+        // 位置
         Vector3 pos = new Vector3(msg.x, msg.y, msg.z);
         Vector3 rot = new Vector3(msg.ex, msg.ey, msg.ez);
-        //forecastPos = pos + 2*(pos - lastPos);
-        //forecastRot = rot + 2*(rot - lastRot);
-        forecastPos = pos;  //跟随不预测
-        forecastRot = rot;
-        forecastTurretY = msg.turretY;
-        forecastGunX = msg.gunX;
-        //更新
+
+        // 线性插值法，这里认为加速度恒定
+        forecastPos = pos + (pos - lastPos);
+        forecastRot = rot + (rot - lastRot);
+        forecastTurretY = msg.turretY + (msg.turretY - lastTurretY);
+        forecastGunX = msg.gunX + (msg.gunX - lastGunX);
+
+        // 更新
         lastPos = pos;
         lastRot = rot;
         lastTurretY = turret.localEulerAngles.y;
         lastGunX = turret.localEulerAngles.x;
-        forecastTime = Time.time;
+        lastSyncTime = Time.time;
     }
 
-
-    //更新位置
+    /**
+     * 在帧率 > 同步帧率的情况下，使用ForecastUpdate让SyncTank移动到预测的位置。
+     *
+     * 算法为简单线性插值，即假设匀速直线运动
+     * forecast 字段直到下次位置同步才会更新
+     */
     public void ForecastUpdate()
     {
-        //时间
-        float t = (Time.time - forecastTime) / CtrlTank.SYNC_INTERVAL;
+        // 经过时间（归一化）
+        float t = (Time.time - lastSyncTime) / CtrlTank.SYNC_INTERVAL;
         t = Mathf.Clamp(t, 0f, 1f);
-        //位置
+
+        // 位置
         Vector3 pos = transform.position;
         pos = Vector3.Lerp(pos, forecastPos, t);
         transform.position = pos;
-        //旋转
+
+        // 旋转
         Quaternion quat = transform.rotation;
         Quaternion forcastQuat = Quaternion.Euler(forecastRot);
         quat = Quaternion.Lerp(quat, forcastQuat, t);
         transform.rotation = quat;
-        //轮子旋转，履带滚动
+
+        // 轮子旋转，履带滚动
         float axis = transform.InverseTransformPoint(forecastPos).z;
         axis = Mathf.Clamp(axis * 1024, -1f, 1f);
         WheelUpdate(axis);
-        //炮管
-        Vector3 le = turret.localEulerAngles;
-        le.y = Mathf.LerpAngle(le.y, forecastTurretY, t);
-        turret.localEulerAngles = le;
-        //炮塔
-        le = gun.localEulerAngles;
-        le.x = Mathf.LerpAngle(le.x, forecastGunX, t);
-        gun.localEulerAngles = le;
+
+        // 炮管
+        Vector3 lea = turret.localEulerAngles;
+        lea.y = Mathf.LerpAngle(lea.y, forecastTurretY, t);
+        turret.localEulerAngles = lea;
+
+        // 炮塔
+        lea = gun.localEulerAngles;
+        lea.x = Mathf.LerpAngle(lea.x, forecastGunX, t);
+        gun.localEulerAngles = lea;
     }
 
-    //开火
+    // 开火
     public void SyncFire(MsgFire msg)
     {
         Bullet bullet = Fire();
+
         // 更新坐标
         Vector3 pos = new Vector3(msg.x, msg.y, msg.z);
         Vector3 rot = new Vector3(msg.ex, msg.ey, msg.ez);
         bullet.transform.position = pos;
         bullet.transform.eulerAngles = rot;
     }
-
 }

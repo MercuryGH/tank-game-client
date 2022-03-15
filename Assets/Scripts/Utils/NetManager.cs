@@ -9,17 +9,17 @@ public static class NetManager
     private static Socket socket;
     private static ByteBuffer readBuff;
 
-    private static Queue<ByteBuffer> writeQueue; // 写入队列
+    private static Queue<ByteBuffer> sendQueue; // 发送的消息的队列。确定了成功发送则出队
 
     private static bool isConnecting = false;
     private static bool isClosing = false;
 
-    private static List<MsgBase> msgList = new List<MsgBase>();
-    private static int msgCount = 0;
-    private const int MAX_MESSAGE_FIRE = 10;
+    private static Queue<MsgBase> receiveQueue; // 接收的消息的队列。处理后出队
+    private static int receiveQueueSize = 0; // 相当于 receiveQueue.size()
+    private const int MAX_MESSAGE_HANDLE = 10; // 一帧最多处理多少条消息
 
     public static bool usePingPong = true;
-    public static int pingInterval = 30;
+    public const int PING_INTERVAL = 30;
     private static float lastPingTime = 0;
     private static float lastPongTime = 0;
 
@@ -124,11 +124,11 @@ public static class NetManager
             SocketType.Stream, ProtocolType.Tcp);
 
         readBuff = new ByteBuffer();
-        writeQueue = new Queue<ByteBuffer>();
+        sendQueue = new Queue<ByteBuffer>();
         isConnecting = false;
         isClosing = false;
-        msgList = new List<MsgBase>();
-        msgCount = 0;
+        receiveQueue = new Queue<MsgBase>();
+        receiveQueueSize = 0;
         lastPingTime = Time.time;
         lastPongTime = Time.time;
 
@@ -178,7 +178,7 @@ public static class NetManager
             return;
         }
 
-        if (writeQueue.Count > 0)
+        if (sendQueue.Count > 0)
         {
             isClosing = true; // CLOSE_WAIT ready
         }
@@ -225,14 +225,14 @@ public static class NetManager
         ByteBuffer ba = new ByteBuffer(sendBytes);
         int count = 0;  // writeQueue的长度
 
-        lock (writeQueue) // 上锁
+        lock (sendQueue) // 上锁
         {
-            writeQueue.Enqueue(ba);
-            count = writeQueue.Count;
+            sendQueue.Enqueue(ba);
+            count = sendQueue.Count;
         }
 
         // send
-        if (count == 1)
+        if (count >= 1)
         {
             socket.BeginSend(sendBytes, 0, sendBytes.Length,
                 0, SendCallback, socket);
@@ -241,35 +241,33 @@ public static class NetManager
 
     public static void SendCallback(IAsyncResult ar)
     {
-        // 获取state、EndSend的处理
         Socket socket = (Socket)ar.AsyncState;
         if (socket == null || !socket.Connected)
         {
             return;
         }
 
-        //EndSend
+        // EndSend 返回已经发送成功的字节数
         int count = socket.EndSend(ar);
 
         // 获取写入队列第一条数据
         ByteBuffer ba;
-        lock (writeQueue)
+        lock (sendQueue)
         {
-            ba = writeQueue.First();
+            ba = sendQueue.First();
         }
 
-        // 完整发送
-        ba.readIdx += count;
-        if (ba.CurSize == 0)
+        // 完整发送了该数据
+        if (ba.readIdx + count == ba.writeIdx)
         {
-            lock (writeQueue)
+            lock (sendQueue)
             {
-                writeQueue.Dequeue();
-                ba = writeQueue.First();
+                sendQueue.Dequeue();
+                ba = sendQueue.First();
             }
         }
 
-        if (ba != null) // 继续发送
+        if (ba != null) // 居然没发送成功，或者队列里居然还有数据，则继续发送
         {
             socket.BeginSend(ba.bytes, ba.readIdx, ba.CurSize,
                 0, SendCallback, socket);
@@ -285,12 +283,15 @@ public static class NetManager
         try
         {
             Socket socket = (Socket)ar.AsyncState;
-            //获取接收数据长度
+
+            // 获取接收数据长度
             int count = socket.EndReceive(ar);
             readBuff.writeIdx += count;
-            //处理二进制消息
+
+            // 处理二进制消息
             OnReceiveData();
-            //继续接收数据
+
+            // 继续接收数据
             if (readBuff.RemainSize < 8)
             {
                 readBuff.MoveBytes();
@@ -305,89 +306,94 @@ public static class NetManager
         }
     }
 
-    //数据处理
+    // 处理readBuff的数据
     public static void OnReceiveData()
     {
-        //消息长度
         if (readBuff.CurSize <= 2)
         {
             return;
         }
-        //获取消息体长度
+
+        // 获取消息体长度
         int readIdx = readBuff.readIdx;
         byte[] bytes = readBuff.bytes;
         Int16 bodyLength = (Int16)((bytes[readIdx + 1] << 8) | bytes[readIdx]);
         if (readBuff.CurSize < bodyLength)
+        {
             return;
+        }
         readBuff.readIdx += 2;
-        //解析协议名
-        int nameCount = 0;
-        string protoName = MsgBase.DecodeName(readBuff.bytes, readBuff.readIdx, out nameCount);
+
+        // 解析协议名
+        string protoName = MsgBase.DecodeName(readBuff.bytes, readBuff.readIdx, out int cnt);
         if (protoName == "")
         {
             Debug.Log("OnReceiveData MsgBase.DecodeName fail");
             return;
         }
-        readBuff.readIdx += nameCount;
-        //解析协议体
-        int bodyCount = bodyLength - nameCount;
+        readBuff.readIdx += cnt;
+
+        // 解析协议体
+        int bodyCount = bodyLength - cnt;
         MsgBase msgBase = MsgBase.Decode(protoName, readBuff.bytes, readBuff.readIdx, bodyCount);
         readBuff.readIdx += bodyCount;
         readBuff.CheckAndMoveBytes();
-        //添加到消息队列
-        lock (msgList)
+
+        // 添加到消息队列
+        lock (receiveQueue)
         {
-            msgList.Add(msgBase);
-            msgCount++;
+            receiveQueue.Enqueue(msgBase);
+            receiveQueueSize++;
         }
-        //继续读取消息
+
+        // 继续读取消息
         if (readBuff.CurSize > 2)
         {
             OnReceiveData();
         }
     }
 
-    public static void Update()
+    // 不断处理接收消息队列里的消息，由GameMain.Update每帧调用
+    public static void Update() 
     {
-        MsgUpdate();
-        PingUpdate();
+        MsgUpdate(); // 尝试接收消息
+        PingUpdate(); // 发送 ping
     }
 
     public static void MsgUpdate()
     {
-        if (msgCount == 0)
+        if (receiveQueueSize == 0)
         {
             return;
         }
 
-        // 重复处理消息
-        for (int i = 0; i < MAX_MESSAGE_FIRE; i++)
+        // 一次 Update 最多接收 MAX_MESSAGE_FIRE 条消息
+        for (int i = 0; i < MAX_MESSAGE_HANDLE; i++) 
         {
-            //获取第一条消息
+            // 获取第一条消息
             MsgBase msgBase = null;
-            lock (msgList)
+            lock (receiveQueue)
             {
-                if (msgList.Count > 0)
+                if (receiveQueue.Count > 0)
                 {
-                    msgBase = msgList[0];
-                    msgList.RemoveAt(0);
-                    msgCount--;
+                    msgBase = receiveQueue.First();
+                    receiveQueue.Dequeue();
+                    receiveQueueSize--;
                 }
             }
-            //分发消息
+            // 调用该消息的回调
             if (msgBase != null)
             {
                 InvokeMsgListener(msgBase.protoName, msgBase);
             }
-            //没有消息了
-            else
+            else // 没有消息则结束
             {
                 break;
             }
         }
     }
 
-    //发送PING协议
+    // 发送PING
     private static void PingUpdate()
     {
         if (!usePingPong)
@@ -396,7 +402,7 @@ public static class NetManager
         }
 
         // 发送PING
-        if (Time.time - lastPingTime > pingInterval)
+        if (Time.time - lastPingTime > PING_INTERVAL)
         {
             MsgPing msgPing = new MsgPing();
             Send(msgPing);
@@ -404,7 +410,7 @@ public static class NetManager
         }
 
         // 检测PONG时间
-        if (Time.time - lastPongTime > pingInterval * 4)
+        if (Time.time - lastPongTime > PING_INTERVAL * 4)
         {
             Close();
         }

@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class CtrlTank : BaseTank
 {
-    public const float SYNC_INTERVAL = 0.05f; // 同步帧率
+    // TODO: modify this interval
+    public const float SYNC_INTERVAL = 0.05f; // 两次进行位置同步最短的时间间隔
 
     public BaseTank aimTank; // 自动瞄准的坦克
 
@@ -19,21 +20,15 @@ public class CtrlTank : BaseTank
     new void Update()
     {
         base.Update();
-        //移动控制
         MoveUpdate();
-        //炮塔控制
         TurretUpdate();
-        //开炮
         FireUpdate();
-        //发送同步信息
         SyncUpdate();
-        //自动搜寻目标
-        SearchUpdate();
-        //自动瞄准
+        SearchAutoAimedTargetUpdate();
         AutoAimUpdate();
     }
 
-    //移动控制
+    // 移动控制
     public void MoveUpdate()
     {
         if (IsDie())
@@ -54,7 +49,7 @@ public class CtrlTank : BaseTank
         WheelUpdate(y);
     }
 
-    //炮塔控制
+    // 炮塔控制
     public void TurretUpdate()
     {
         if (IsDie())
@@ -77,16 +72,16 @@ public class CtrlTank : BaseTank
         }
 
         // 旋转
-        Vector3 le = turret.localEulerAngles;
-        le.y += axis * Time.deltaTime * turretSpeed;
-        turret.localEulerAngles = le;
+        Vector3 lea = turret.localEulerAngles;
+        lea.y += axis * Time.deltaTime * turretSpeed;
+        turret.localEulerAngles = lea;
 
         // 保护时间
         preventSearchTime = Time.time + PREVENT_INTERVAL;
         aimTank = null;
     }
 
-    //开炮
+    // 开炮
     public void FireUpdate()
     {
         if (IsDie())
@@ -107,51 +102,54 @@ public class CtrlTank : BaseTank
         Bullet bullet = Fire();
 
         // 发送同步协议
-        MsgFire msg = new MsgFire();
-        msg.x = bullet.transform.position.x;
-        msg.y = bullet.transform.position.y;
-        msg.z = bullet.transform.position.z;
-        msg.ex = bullet.transform.eulerAngles.x;
-        msg.ey = bullet.transform.eulerAngles.y;
-        msg.ez = bullet.transform.eulerAngles.z;
+        MsgFire msg = new MsgFire
+        {
+            x = bullet.transform.position.x,
+            y = bullet.transform.position.y,
+            z = bullet.transform.position.z,
+            ex = bullet.transform.eulerAngles.x,
+            ey = bullet.transform.eulerAngles.y,
+            ez = bullet.transform.eulerAngles.z
+        };
         NetManager.Send(msg);
     }
 
-    //发送同步信息
+    // 发送同步信息
     public void SyncUpdate()
     {
-        //时间间隔判断
+        // 时间间隔判断
         if (Time.time - lastSendSyncTime < SYNC_INTERVAL)
         {
             return;
         }
         lastSendSyncTime = Time.time;
-        //发送同步协议
-        MsgSyncTank msg = new MsgSyncTank();
-        msg.x = transform.position.x;
-        msg.y = transform.position.y;
-        msg.z = transform.position.z;
-        msg.ex = transform.eulerAngles.x;
-        msg.ey = transform.eulerAngles.y;
-        msg.ez = transform.eulerAngles.z;
-        msg.turretY = turret.localEulerAngles.y;
-        msg.gunX = gun.localEulerAngles.x;
+        // 发送同步协议
+        MsgSyncTank msg = new MsgSyncTank
+        {
+            x = transform.position.x,
+            y = transform.position.y,
+            z = transform.position.z,
+            ex = transform.eulerAngles.x,
+            ey = transform.eulerAngles.y,
+            ez = transform.eulerAngles.z,
+            turretY = turret.localEulerAngles.y,
+            gunX = gun.localEulerAngles.x
+        };
         NetManager.Send(msg);
     }
 
-
-    //计算爆炸位置
-    public Vector3 ForecastExplodePoint()
+    // 从炮管发射射线，获取第一个相交点
+    public Vector3 getAimedDirection()
     {
-        //碰撞信息和碰撞点
+        // 碰撞信息和碰撞点
         Vector3 hitPoint = Vector3.zero;
-        RaycastHit hit;
-        //沿着炮管方向的射线
+        // 沿着炮管方向的射线
         Vector3 pos = firePoint.position;
         Ray ray = new Ray(pos, firePoint.forward);
-        //射线检测
+
+        // 射线检测
         int layerMask = ~(1 << LayerMask.NameToLayer("Bullet"));
-        if (Physics.Raycast(ray, out hit, 200.0f, layerMask))
+        if (Physics.Raycast(ray, out RaycastHit hit, 200.0f, layerMask))
         {
             hitPoint = hit.point;
         }
@@ -162,46 +160,39 @@ public class CtrlTank : BaseTank
         return hitPoint;
     }
 
-    //搜寻自动瞄准目标
-    public void SearchUpdate()
+    // 搜寻自动瞄准目标
+    public void SearchAutoAimedTargetUpdate()
     {
-        //时间间隔判断
+        // 时间间隔判断
         if (Time.time - lastSearchTime < SEARCH_INTERVAL)
         {
             return;
         }
         lastSearchTime = Time.time;
-        //搜索
+
+        // 搜索
         aimTank = null;
         foreach (BaseTank tank in BattleManager.tanks.Values)
         {
-            //同个阵营
-            if (tank.team == team)
+            //同个阵营，或者是尸体
+            if (tank.team == team || tank == this || tank.IsDie())
             {
                 continue;
             }
-            //自己
-            if (tank == this)
-            {
-                continue;
-            }
-            //已经死亡
-            if (tank.IsDie())
-            {
-                continue;
-            }
-            //相对位置（z）
+            // 相对位置（z）
+
             Vector3 p = firePoint.InverseTransformPoint(tank.transform.position);
             if (p.z <= 0 || p.z > MAX_SEARCH_DISTANCE)
             {
                 continue;
             }
-            //相对位置，45°角度限制
+            // 相对位置，45°俯仰角限制
             if (Mathf.Abs(p.x) > p.z)
             {
                 continue;
             }
-            //是否切换目标
+
+            // 是否切换目标
             if (aimTank != null)
             {
                 float d1 = Vector3.Distance(tank.transform.position, transform.position);
@@ -215,31 +206,33 @@ public class CtrlTank : BaseTank
         }
     }
 
-    //自动旋转炮管炮塔
+    // 自动旋转炮管炮塔
     public void AutoAimUpdate()
     {
-        //保护时间
+        // 保护时间
         if (Time.time < preventSearchTime)
         {
             return;
         }
+
         Vector3 p;
         if (aimTank == null)
         {
-            //回正
+            // 回正
             p = firePoint.InverseTransformPoint(transform.position + transform.forward * 100 + transform.up * 5);
         }
         else
         {
-            //相对位置
+            // 相对位置
             p = firePoint.InverseTransformPoint(aimTank.transform.position + new Vector3(0, 5f, 0));
         }
-        //旋转炮塔
+        // 旋转炮塔
         float axis = Mathf.Clamp(p.x, -1, 1);
         Vector3 le = turret.localEulerAngles;
         le.y += axis * Time.deltaTime * turretSpeed;
         turret.localEulerAngles = le;
-        //旋转炮管
+
+        // 旋转炮管
         axis = Mathf.Clamp(p.y, -1, 1);
         le = gun.localEulerAngles;
         le.x -= axis * Time.deltaTime * gunSpeed;

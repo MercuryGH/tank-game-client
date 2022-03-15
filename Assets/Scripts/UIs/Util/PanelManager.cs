@@ -39,7 +39,7 @@ public static class PanelManager
             return;
         }
 
-        BasePanel panel = root.gameObject.AddComponent<T>(); // 挂载到Root
+        BasePanel panel = root.gameObject.AddComponent<T>(); // 挂载T的脚本到Root
         panel.OnInit();
         panel.LoadSkin();
 
@@ -54,7 +54,6 @@ public static class PanelManager
 
     public static void RemovePanel(string name)
     {
-        //没有打开
         if (!panels.ContainsKey(name))
         {
             return;

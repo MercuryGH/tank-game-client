@@ -2,13 +2,14 @@
 using UnityEngine;
 using System.Linq;
 
+// TODO: See if using record type is better
 public class MsgBase
 {
     public string protoName = "null";
 
     /**
      * 协议格式为 
-     * struct Message {
+     * varlen struct Message {
      *     short totalLength; // size(Message) - sizeof(short)
      *     short msgTypeLength;
      *     byte[] msgType;
@@ -32,7 +33,7 @@ public class MsgBase
      * @params protoName 协议名
      * @params bytes 原字节流
      * @params offset 从 bytes[offset] 的位置开始解释JSON
-     * @params count 到 bytes[offset + count]的位置停止解释JSON
+     * @params count 到 bytes[offset + count] 的位置停止解释JSON
      */
     public static MsgBase Decode(string protoName, byte[] bytes, int offset, int count)
     {
@@ -46,7 +47,7 @@ public class MsgBase
     /**
      * 编码协议名
      * @params msgBase 待发送消息
-     * @return bytes 串行化后的协议名长度 + 协议名 byte array
+     * @return bytes 串行化后的 协议名长度 + 协议名 构成的 byte array
      */
     public static byte[] EncodeName(MsgBase msgBase)
     {

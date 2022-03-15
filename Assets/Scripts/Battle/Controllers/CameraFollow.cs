@@ -4,11 +4,20 @@ using UnityEngine;
 
 public class CameraFollow : MonoBehaviour
 {
+    public float Pitch { get; private set; }
+    public float Yaw { get; private set; }
+
+    public const float MOUSE_SENSITIVITY = 5;
+    public const float ROTATE_SPEED = 80;
+    public const float Y_SPEED = 5;
+
+    private Transform target; // this
+
     public Vector3 disVec = new Vector3(0, 15, -22); // 相机与目标的连线矢量
     // disVec 使用柱坐标系，(x, y, z) = (角度, 高度, 半径)
 
     public readonly Vector3 OFFSET = new Vector3(0, 8f, 0); // 让相机盯着模型中心以上 高度 + 8 的位置，更舒服
-    public const float SPEED = 6f; // 相机移动速度
+    public const float SPEED = 25f; // 相机移动速度
     public const float MIN_DISTANCE_Z = -35f; 
     public const float MAX_DISTANCE_Z = -10f;
     public const float ZOOM_SPEED = 2f;

@@ -19,16 +19,15 @@ public class RegisterPanel : BasePanel
 
     public override void OnShow(params object[] args)
     {
-        //寻找组件
         idInput = skin.transform.Find("IdInput").GetComponent<InputField>();
         pwInput = skin.transform.Find("PwInput").GetComponent<InputField>();
         repeatPwInput = skin.transform.Find("RepInput").GetComponent<InputField>();
         registerBtn = skin.transform.Find("RegisterBtn").GetComponent<Button>();
         closeBtn = skin.transform.Find("CloseBtn").GetComponent<Button>();
-        //监听
+
         registerBtn.onClick.AddListener(OnClickRegister);
         closeBtn.onClick.AddListener(OnCloseClick);
-        //网络协议监听
+
         NetManager.AddMsgListener("MsgRegister", OnMsgRegister);
     }
 
@@ -41,12 +40,12 @@ public class RegisterPanel : BasePanel
     {
         if (idInput.text == "" || pwInput.text == "")
         {
-            PanelManager.CreatePanel<TipPanel>("用户名和密码不能为空");
+            PanelManager.CreatePanel<TipPanel>("用户名或密码不能为空！");
             return;
         }
         if (repeatPwInput.text != pwInput.text)
         {
-            PanelManager.CreatePanel<TipPanel>("两次输入的密码不同");
+            PanelManager.CreatePanel<TipPanel>("两次输入的密码不一致！");
             return;
         }
 
@@ -62,9 +61,7 @@ public class RegisterPanel : BasePanel
         if (msg.result == 0)
         {
             Debug.Log("注册成功");
-            //提示
             PanelManager.CreatePanel<TipPanel>("注册成功");
-            //关闭界面
             Close();
         }
         else
