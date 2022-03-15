@@ -7,6 +7,8 @@ public class CtrlTank : BaseTank
     // TODO: modify this interval
     public const float SYNC_INTERVAL = 0.05f; // 两次进行位置同步最短的时间间隔
 
+    public Photographer photographer;
+
     public BaseTank aimTank; // 自动瞄准的坦克
 
     private const float SEARCH_INTERVAL = 1f;       // 搜索时间间隔
@@ -16,6 +18,13 @@ public class CtrlTank : BaseTank
     private float lastSendSyncTime = 0;  // 上一次发送同步信息的时间
     private float lastSearchTime = 0;    // 上一次搜索时间
     private float preventSearchTime = 0; // 禁止自动瞄准到某个时间
+
+    public override void Init(string skinPath)
+    {
+        base.Init(skinPath);
+        photographer = GameObject.Find("Photographer").GetComponent<Photographer>(); // 如此暴力的反射找全局GameObject下的Component
+        photographer.InitCamera(cameraFocus);
+    }
 
     new void Update()
     {

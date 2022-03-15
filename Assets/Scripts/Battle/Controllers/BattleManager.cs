@@ -80,7 +80,7 @@ public class BattleManager
 
     public static void GenerateTank(TankInfo tankInfo)
     {
-        // 产生名称为 "Tank_${玩家id}" 的 GameObject
+        // 产生名为 "Tank_${玩家id}" 的 GameObject
         string objName = "Tank_" + tankInfo.id; 
         GameObject tankObj = new GameObject(objName);
 
@@ -91,7 +91,7 @@ public class BattleManager
         if (tankInfo.id == GameMain.id)
         {
             tank = tankObj.AddComponent<CtrlTank>();
-            tankObj.AddComponent<CameraFollow>();
+            //tankObj.AddComponent<CameraFollow>();
         }
         else
         {

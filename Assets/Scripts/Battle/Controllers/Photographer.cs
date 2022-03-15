@@ -18,7 +18,8 @@ public class Photographer : MonoBehaviour
 
     private void Awake()
     {
-        _camera = transform.GetChild(0);
+        _camera = transform.GetChild(0); // main camera transform
+        //_camera = Camera.main.transform;
     }
 
     // Start is called before the first frame update
@@ -36,6 +37,10 @@ public class Photographer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (_target == null)
+        {
+            return;
+        }
         UpdateRotation();
         UpdatePosition();
         UpdateArmLength();
@@ -56,12 +61,17 @@ public class Photographer : MonoBehaviour
     private void UpdatePosition()
     {
         Vector3 position = _target.position;
+
         float newY = Mathf.Lerp(transform.position.y, position.y, Time.deltaTime * Y_SPEED);
         transform.position = new Vector3(position.x, newY, position.z);
     }
 
     private void UpdateArmLength()
     {
+        if (_armLengthCurve == null)
+        {
+            Debug.Log("fuck");
+        }
         _camera.localPosition = new Vector3(0, 0, _armLengthCurve.Evaluate(Pitch) * -1);
     }
 }

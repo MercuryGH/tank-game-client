@@ -47,8 +47,9 @@ public class Bullet : MonoBehaviour
         }
 
         // 无论是否打中坦克，均显示爆炸效果，并摧毁自身
-        GameObject explode = ResManager.LoadPrefab("fire");
-        Instantiate(explode, transform.position, transform.rotation);
+        // 爆炸效果不会做
+        //GameObject explode = ResManager.LoadPrefab("fire");
+        //Instantiate(explode, transform.position, transform.rotation);
         Destroy(gameObject);
     }
 

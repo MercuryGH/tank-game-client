@@ -13,6 +13,7 @@ public class BaseTank : MonoBehaviour
     public Transform turret; // 炮塔
     public Transform gun; // 炮管
     public Transform firePoint; // 发射点
+    public Transform cameraFocus; // 第三人称摄像机跟随点
     public float fireCd = 0.5f; // 炮弹CD时间
     public float lastFireTime = 0; // 上一次发射炮弹的时间
     public float hp = 100; // 生命值
@@ -42,6 +43,8 @@ public class BaseTank : MonoBehaviour
         skin.transform.parent = this.transform;
         skin.transform.localPosition = Vector3.zero;
         skin.transform.localEulerAngles = Vector3.zero;
+
+        cameraFocus = skin.transform.Find("CameraFocus");
 
         // 物理
         rigidBody = gameObject.AddComponent<Rigidbody>();
