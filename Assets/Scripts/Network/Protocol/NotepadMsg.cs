@@ -1,4 +1,4 @@
-﻿public sealed class MsgGetText : MsgBase
+﻿public sealed class MsgGetText : BaseMsg
 {
     public MsgGetText() { protoName = "MsgGetText"; }
 
@@ -6,7 +6,7 @@
     public string text = "";
 }
 
-public sealed class MsgSaveText : MsgBase
+public sealed class MsgSaveText : BaseMsg
 {
     public MsgSaveText() { protoName = "MsgSaveText"; }
 

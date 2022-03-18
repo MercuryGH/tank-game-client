@@ -1,4 +1,4 @@
-﻿public sealed class MsgRegister : MsgBase
+﻿public sealed class MsgRegister : BaseMsg
 {
     public MsgRegister() { protoName = "MsgRegister"; }
 
@@ -6,11 +6,11 @@
     public string id = "";
     public string pw = "";
 
-    // response status code（0-成功，1-失败）
+    // response status code（0-成功，1-用户名已存在，2-非法字符，3-其他错误）
     public int result = 0;
 }
 
-public sealed class MsgLogin : MsgBase
+public sealed class MsgLogin : BaseMsg
 {
     public MsgLogin() { protoName = "MsgLogin"; }
 
@@ -22,7 +22,7 @@ public sealed class MsgLogin : MsgBase
     public int result = 0;
 }
 
-public sealed class MsgKick : MsgBase
+public sealed class MsgKick : BaseMsg
 {
     public MsgKick() { protoName = "MsgKick"; }
 

@@ -14,14 +14,17 @@ public static class NetManager
     private static bool isConnecting = false;
     private static bool isClosing = false;
 
-    private static Queue<MsgBase> receiveQueue; // 接收的消息的队列。处理后出队
+    private static Queue<BaseMsg> receiveQueue; // 接收的消息的队列。处理后出队
     private static int receiveQueueSize = 0; // 相当于 receiveQueue.size()
     private const int MAX_MESSAGE_HANDLE = 10; // 一帧最多处理多少条消息
 
     public static bool usePingPong = true;
-    public const int PING_INTERVAL = 30;
+    public const int PING_INTERVAL = 3; // 3秒 1 ping，如何
     private static float lastPingTime = 0;
     private static float lastPongTime = 0;
+
+    // 绑定到全局 TTL 显示器
+    private static readonly TTLShower ttlShower = GameObject.Find("Root").GetComponent<TTLShower>();
 
     // 网络事件
     public enum NetEvent
@@ -68,7 +71,7 @@ public static class NetManager
     }
 
     // 消息委托类型
-    public delegate void MsgListener(MsgBase msgBase);
+    public delegate void MsgListener(BaseMsg msgBase);
     // 消息监听列表
     private static Dictionary<string, MsgListener> msgListeners = new Dictionary<string, MsgListener>();
 
@@ -90,10 +93,26 @@ public static class NetManager
             msgListeners[msgName] -= listener;
         }
     }
-    private static void InvokeMsgListener(string msgName, MsgBase msgBase)
+    private static void InvokeMsgListener(string msgName, BaseMsg msgBase)
     {
         if (msgListeners.ContainsKey(msgName))
         {
+            if (msgListeners[msgName] == null)
+            {
+                Debug.LogWarning(msgName + " doesn't have a msg listener!");
+                return;
+            } 
+            else if (msgBase == null)
+            {
+                Debug.LogError("msgBase is null");
+                return;
+            }
+            else if (msgName == null)
+            {
+                Debug.LogError("msgName is null");
+                return;
+            }
+
             msgListeners[msgName](msgBase);
         }
     }
@@ -127,10 +146,12 @@ public static class NetManager
         sendQueue = new Queue<ByteBuffer>();
         isConnecting = false;
         isClosing = false;
-        receiveQueue = new Queue<MsgBase>();
+        receiveQueue = new Queue<BaseMsg>();
         receiveQueueSize = 0;
         lastPingTime = Time.time;
         lastPongTime = Time.time;
+
+        Debug.Log("Init NetManager State!!");
 
         if (!msgListeners.ContainsKey("MsgPong"))
         {
@@ -192,7 +213,7 @@ public static class NetManager
     /**
      * 游戏模块均可调用的 Send 方法。向服务器发送数据包
      */
-    public static void Send(MsgBase msg)
+    public static void Send(BaseMsg msg)
     {
         if (socket == null || !socket.Connected)
         {
@@ -207,9 +228,11 @@ public static class NetManager
             return;
         }
 
+        //Debug.Log("test register: " + msgReg.id + " " + msgReg.pw);
+
         // 数据编码
-        byte[] nameBytes = MsgBase.EncodeName(msg);
-        byte[] bodyBytes = MsgBase.Encode(msg);
+        byte[] nameBytes = BaseMsg.EncodeName(msg);
+        byte[] bodyBytes = BaseMsg.Encode(msg);
         int len = nameBytes.Length + bodyBytes.Length;
         byte[] sendBytes = new byte[2 + len];
 
@@ -325,7 +348,7 @@ public static class NetManager
         readBuff.readIdx += 2;
 
         // 解析协议名
-        string protoName = MsgBase.DecodeName(readBuff.bytes, readBuff.readIdx, out int cnt);
+        string protoName = BaseMsg.DecodeName(readBuff.bytes, readBuff.readIdx, out int cnt);
         if (protoName == "")
         {
             Debug.Log("OnReceiveData MsgBase.DecodeName fail");
@@ -335,7 +358,7 @@ public static class NetManager
 
         // 解析协议体
         int bodyCount = bodyLength - cnt;
-        MsgBase msgBase = MsgBase.Decode(protoName, readBuff.bytes, readBuff.readIdx, bodyCount);
+        BaseMsg msgBase = BaseMsg.Decode(protoName, readBuff.bytes, readBuff.readIdx, bodyCount);
         readBuff.readIdx += bodyCount;
         readBuff.CheckAndMoveBytes();
 
@@ -371,7 +394,7 @@ public static class NetManager
         for (int i = 0; i < MAX_MESSAGE_HANDLE; i++) 
         {
             // 获取第一条消息
-            MsgBase msgBase = null;
+            BaseMsg msgBase = null;
             lock (receiveQueue)
             {
                 if (receiveQueue.Count > 0)
@@ -412,13 +435,21 @@ public static class NetManager
         // 检测PONG时间
         if (Time.time - lastPongTime > PING_INTERVAL * 4)
         {
+            PanelManager.CreatePanel<TipPanel>("服务器似乎忙不过来了，或者已经停机，很久都没有回复PONG，您已被迫下线");
+            //Debug.LogError("[Connection Reset] Server has not response PONG for so long!");
             Close();
         }
     }
 
     // 监听PONG协议
-    private static void OnMsgPong(MsgBase msgBase)
+    private static void OnMsgPong(BaseMsg msgBase)
     {
         lastPongTime = Time.time;
+        float ttl = lastPongTime - lastPingTime;
+
+        Debug.Log("Receive Pong, TTL = " + ttl);
+        int ttlInMs = (int)(ttl * 1000);
+
+        ttlShower.ttl = ttlInMs;
     }
 }

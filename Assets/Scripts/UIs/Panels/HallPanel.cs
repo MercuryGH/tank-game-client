@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 
-public class RoomListPanel : BasePanel
+public class HallPanel : BasePanel
 {
     private Text idText;
     private Text scoreText;
@@ -27,8 +27,8 @@ public class RoomListPanel : BasePanel
 
     public override void OnShow(params object[] args)
     {
-        idText = skin.transform.Find("InfoPanel/IdText").GetComponent<Text>();
-        scoreText = skin.transform.Find("InfoPanel/ScoreText").GetComponent<Text>();
+        idText = skin.transform.Find("InfoPanel/PlayerStatus/IdText").GetComponent<Text>();
+        scoreText = skin.transform.Find("InfoPanel/PlayerStatus/ScoreText").GetComponent<Text>();
         createButton = skin.transform.Find("CtrlPanel/CreateButton").GetComponent<Button>();
         reflashButton = skin.transform.Find("CtrlPanel/ReflashButton").GetComponent<Button>();
         content = skin.transform.Find("ListPanel/Scroll View/Viewport/Content");
@@ -67,13 +67,13 @@ public class RoomListPanel : BasePanel
         NetManager.RemoveMsgListener("MsgEnterRoom", OnMsgEnterRoom);
     }
 
-    private void OnMsgGetAchieve(MsgBase msgBase)
+    private void OnMsgGetAchieve(BaseMsg msgBase)
     {
         MsgGetAchieve msg = (MsgGetAchieve)msgBase;
-        scoreText.text = msg.win + "胜 " + msg.lost + "负";
+        scoreText.text = msg.win + "胜 " + msg.lose + "负";
     }
 
-    private void OnMsgGetRoomList(MsgBase msgBase)
+    private void OnMsgGetRoomList(BaseMsg msgBase)
     {
         MsgGetRoomList msg = (MsgGetRoomList)msgBase;
 
@@ -147,7 +147,7 @@ public class RoomListPanel : BasePanel
     //    NetManager.Send(msg);
     //}
 
-    private void OnMsgEnterRoom(MsgBase msgBase)
+    private void OnMsgEnterRoom(BaseMsg msgBase)
     {
         MsgEnterRoom msg = (MsgEnterRoom)msgBase;
         if (msg.result == 0)
@@ -167,19 +167,19 @@ public class RoomListPanel : BasePanel
         NetManager.Send(msg);
     }
 
-    private void OnMsgCreateRoom(MsgBase msgBase)
+    private void OnMsgCreateRoom(BaseMsg baseMsg)
     {
-        MsgCreateRoom msg = (MsgCreateRoom)msgBase;
+        MsgCreateRoom msg = (MsgCreateRoom)baseMsg;
         // 创建成功后，自动进入房间
         if (msg.result == 0)
         {
-            //PanelManager.Open<TipPanel>("创建成功");
+            PanelManager.CreatePanel<TipPanel>("房间创建成功");
             PanelManager.CreatePanel<RoomPanel>();
             Close();
         }
         else
         {
-            PanelManager.CreatePanel<TipPanel>("创建房间失败");
+            PanelManager.CreatePanel<TipPanel>("房间创建失败");
         }
     }
 

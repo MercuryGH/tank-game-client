@@ -55,7 +55,7 @@ public class RegisterPanel : BasePanel
         NetManager.Send(msgReg);
     }
 
-    public void OnMsgRegister(MsgBase msgBase)
+    public void OnMsgRegister(BaseMsg msgBase)
     {
         MsgRegister msg = (MsgRegister)msgBase;
         if (msg.result == 0)
@@ -64,9 +64,17 @@ public class RegisterPanel : BasePanel
             PanelManager.CreatePanel<TipPanel>("注册成功");
             Close();
         }
-        else
+        else if (msg.result == 1)
         {
-            PanelManager.CreatePanel<TipPanel>("注册失败");
+            PanelManager.CreatePanel<TipPanel>("该用户名已存在！");
+        }
+        else if (msg.result == 2)
+        {
+            PanelManager.CreatePanel<TipPanel>("用户名或密码含有非法字符！");
+        }
+        else if (msg.result == 3)
+        {
+            PanelManager.CreatePanel<TipPanel>("注册时发生未知错误！");
         }
     }
 

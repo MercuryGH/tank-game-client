@@ -1,5 +1,5 @@
 ﻿// 查询玩家个人信息
-public sealed class MsgGetAchieve : MsgBase
+public sealed class MsgGetAchieve : BaseMsg
 {
     public MsgGetAchieve() { protoName = "MsgGetAchieve"; }
 
@@ -7,7 +7,7 @@ public sealed class MsgGetAchieve : MsgBase
 
     // response
     public int win = 0;
-    public int lost = 0;
+    public int lose = 0;
 }
 
 // 房间信息数据结构
@@ -21,16 +21,25 @@ public sealed class RoomInfo
 }
 
 // 查询房间列表
-public sealed class MsgGetRoomList : MsgBase
+public sealed class MsgGetRoomList : BaseMsg
 {
-    public MsgGetRoomList() { protoName = "MsgGetRoomList"; }
+    public MsgGetRoomList(int roomCnt)
+    {
+        protoName = "MsgGetRoomList";
+        rooms = new RoomInfo[roomCnt];
+    }
+
+    public MsgGetRoomList()
+    {
+        protoName = "MsgGetRoomList";
+    }
 
     // response
     public RoomInfo[] rooms;
 }
 
 // 创建房间
-public sealed class MsgCreateRoom : MsgBase
+public sealed class MsgCreateRoom : BaseMsg
 {
     public MsgCreateRoom() { protoName = "MsgCreateRoom"; }
 
@@ -39,7 +48,7 @@ public sealed class MsgCreateRoom : MsgBase
 }
 
 // 进入房间
-public sealed class MsgEnterRoom : MsgBase
+public sealed class MsgEnterRoom : BaseMsg
 {
     public MsgEnterRoom() { protoName = "MsgEnterRoom"; }
 

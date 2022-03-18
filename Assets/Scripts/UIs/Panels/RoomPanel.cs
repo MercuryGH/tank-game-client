@@ -26,7 +26,7 @@ public class RoomPanel : BasePanel
         content2 = skin.transform.Find("ListPanel/Scroll View2/Viewport/Content");
         playerObj = skin.transform.Find("Player").gameObject;
 
-        // 不激活玩家信息
+        // 隐藏玩家信息模板
         playerObj.SetActive(false);
 
         startButton.onClick.AddListener(OnStartClick);
@@ -44,12 +44,15 @@ public class RoomPanel : BasePanel
     {
         NetManager.RemoveMsgListener("MsgGetRoomInfo", OnMsgGetRoomInfo);
         NetManager.RemoveMsgListener("MsgLeaveRoom", OnMsgLeaveRoom);
-        NetManager.RemoveMsgListener("MsgStartBattle", OnMsgStartBattle);
     }
 
-    public void OnMsgGetRoomInfo(MsgBase msgBase)
+    public void OnMsgGetRoomInfo(BaseMsg msgBase)
     {
         MsgGetRoomInfo msg = (MsgGetRoomInfo)msgBase;
+        //if (content1 == null || content2 == null)
+        //{
+        //    return;
+        //}
 
         // 清除玩家列表
         for (int i = content1.childCount - 1; i >= 0; i--)
@@ -78,7 +81,7 @@ public class RoomPanel : BasePanel
         // 创建玩家信息GameObject
         GameObject o = Instantiate(playerObj);
         o.SetActive(true);
-        o.transform.localScale = Vector3.one;
+        //o.transform.localScale = Vector3.one;
 
         // 设置阵营 1-红 2-蓝
         if (playerInfo.team == 1)
@@ -106,7 +109,7 @@ public class RoomPanel : BasePanel
         {
             ownerImage.gameObject.SetActive(false);
         }
-        scoreText.text = playerInfo.win + "胜 " + playerInfo.lost + "负";
+        scoreText.text = playerInfo.win + "胜 " + playerInfo.lose + "负";
     }
 
     public void OnCloseClick()
@@ -115,14 +118,14 @@ public class RoomPanel : BasePanel
         NetManager.Send(msg);
     }
 
-    public void OnMsgLeaveRoom(MsgBase msgBase)
+    public void OnMsgLeaveRoom(BaseMsg msgBase)
     {
         MsgLeaveRoom msg = (MsgLeaveRoom)msgBase;
 
         if (msg.result == 0)
         {
             // PanelManager.Open<TipPanel>("退出房间");
-            PanelManager.CreatePanel<RoomListPanel>();
+            PanelManager.CreatePanel<HallPanel>();
             Close();
         }
         else
@@ -137,11 +140,12 @@ public class RoomPanel : BasePanel
         NetManager.Send(msg);
     }
 
-    public void OnMsgStartBattle(MsgBase msgBase)
+    public void OnMsgStartBattle(BaseMsg msgBase)
     {
         MsgStartBattle msg = (MsgStartBattle)msgBase;
         if (msg.result == 0)
         {
+            NetManager.RemoveMsgListener("MsgStartBattle", OnMsgStartBattle); // async await 呢，救一下啊
             Close();
         }
         else

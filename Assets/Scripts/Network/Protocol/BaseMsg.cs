@@ -3,7 +3,7 @@ using UnityEngine;
 using System.Linq;
 
 // TODO: See if using record type is better
-public class MsgBase
+public class BaseMsg
 {
     public string protoName = "null";
 
@@ -22,9 +22,10 @@ public class MsgBase
      * 没有考虑长度等其他信息，还需要编码成协议格式才能发送
      * TODO: 封装编码方法
      */
-    public static byte[] Encode(MsgBase msgBase)
+    public static byte[] Encode(BaseMsg msgBase)
     {
         string s = JsonUtility.ToJson(msgBase);
+        Debug.Log("Debug encode: " + s);
         return System.Text.Encoding.UTF8.GetBytes(s);
     }
 
@@ -35,12 +36,12 @@ public class MsgBase
      * @params offset 从 bytes[offset] 的位置开始解释JSON
      * @params count 到 bytes[offset + count] 的位置停止解释JSON
      */
-    public static MsgBase Decode(string protoName, byte[] bytes, int offset, int count)
+    public static BaseMsg Decode(string protoName, byte[] bytes, int offset, int count)
     {
         string s = System.Text.Encoding.UTF8.GetString(bytes, offset, count);
         Debug.Log("Debug decode: " + s);
 
-        MsgBase msgBase = (MsgBase)JsonUtility.FromJson(s, Type.GetType(protoName));
+        BaseMsg msgBase = (BaseMsg)JsonUtility.FromJson(s, Type.GetType(protoName));
         return msgBase;
     }
 
@@ -49,7 +50,7 @@ public class MsgBase
      * @params msgBase 待发送消息
      * @return bytes 串行化后的 协议名长度 + 协议名 构成的 byte array
      */
-    public static byte[] EncodeName(MsgBase msgBase)
+    public static byte[] EncodeName(BaseMsg msgBase)
     {
         byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(msgBase.protoName);
         Int16 len = (Int16)nameBytes.Length;

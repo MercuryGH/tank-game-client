@@ -14,13 +14,26 @@ public class GameMain : MonoBehaviour
         PanelManager.Init();
         BattleManager.Init();
 
-        //PanelManager.CreatePanel<LoginPanel>();
+        PanelManager.CreatePanel<LoginPanel>();
 
         // 用于单机测试
+        //SinglePlayTest();
+    }
 
+    private void TestJson()
+    {
+        MsgRegister msg = new MsgRegister();
+        msg.id = "Mercury";
+        msg.pw = "114514";
+
+        BaseMsg.Encode(msg);
+    }
+
+    private void SinglePlayTest()
+    {
         GameMain.id = "cat";
         TankInfo tankInfo = new TankInfo();
-        tankInfo.camp = 1;
+        tankInfo.team = 1;
         tankInfo.id = GameMain.id;
         tankInfo.hp = 30;
         tankInfo.x = 262;
@@ -31,7 +44,7 @@ public class GameMain : MonoBehaviour
         PanelManager.CreatePanel<AimPanel>();
 
         TankInfo tankInfo2 = new TankInfo();
-        tankInfo2.camp = 2;
+        tankInfo2.team = 2;
         tankInfo2.id = "dog";
         tankInfo2.hp = 100;
         tankInfo2.z = 30;
@@ -47,11 +60,30 @@ public class GameMain : MonoBehaviour
 
     void OnConnectClose(string err)
     {
-        Debug.Log("断开连接");
+        PanelManager.CreatePanel<TipPanel>("与服务器断开连接");
     }
 
-    void OnMsgKick(MsgBase msgBase)
+    void OnMsgKick(BaseMsg baseMsg)
     {
-        PanelManager.CreatePanel<TipPanel>("被踢下线");
+        MsgKick msgKick = (MsgKick)baseMsg;
+
+        string showText = "";
+        if (msgKick.reason == 0)
+        {
+            showText = "因他人登录同一账号，您已被迫下线";
+        }
+        else if (msgKick.reason == 1)
+        {
+            showText = "服务端无法解析您的行为，您已被迫下线";
+        }
+        else if (msgKick.reason == 2)
+        {
+            showText = "您发送的数据过长，服务端无法处理，您已被迫下线";
+        }
+        else if (msgKick.reason == 3)
+        {
+            showText = "【心跳失常】与服务器断开连接";
+        }
+        PanelManager.CreatePanel<TipPanel>(showText);
     }
 }

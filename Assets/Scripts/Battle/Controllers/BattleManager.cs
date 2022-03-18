@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BattleManager
+public static class BattleManager
 {
     // {玩家id: 坦克对象} 键值对
     public static Dictionary<string, BaseTank> tanks = new Dictionary<string, BaseTank>();
@@ -47,12 +47,10 @@ public class BattleManager
     // 重置场景
     public static void Reset()
     {
-        // 场景
         foreach (BaseTank tank in tanks.Values)
         {
             MonoBehaviour.Destroy(tank.gameObject);
         }
-        // 坦克列表
         tanks.Clear();
     }
 
@@ -62,7 +60,7 @@ public class BattleManager
         Reset();
 
         // 关闭非游戏场景界面
-        PanelManager.RemovePanel("RoomPanel");  //可以放到房间系统的监听中
+        PanelManager.RemovePanel("RoomPanel"); 
         PanelManager.RemovePanel("ResultPanel");
         PanelManager.RemovePanel("KillPanel");
         PanelManager.RemovePanel("BattlePanel");
@@ -87,11 +85,10 @@ public class BattleManager
         // AddComponent
         BaseTank tank = null;
         
-        // 是自己的坦克，就挂载控制脚本，并添加第三人称相机
+        // 是自己的坦克，就挂载控制脚本
         if (tankInfo.id == GameMain.id)
         {
             tank = tankObj.AddComponent<CtrlTank>();
-            //tankObj.AddComponent<CameraFollow>();
         }
         else
         {
@@ -99,7 +96,7 @@ public class BattleManager
         }
         
         // 属性
-        tank.team = tankInfo.camp;
+        tank.team = tankInfo.team;
         tank.id = tankInfo.id;
         tank.hp = tankInfo.hp;
 
@@ -110,7 +107,7 @@ public class BattleManager
         tank.transform.eulerAngles = rot;
 
         // 根据坦克所属阵营分配不同坦克模型
-        if (tankInfo.camp == 1)
+        if (tankInfo.team == 1)
         {
             tank.Init("tankPrefab");
         }
@@ -123,20 +120,20 @@ public class BattleManager
         AddTank(tankInfo.id, tank);
     }
 
-    public static void OnMsgEnterBattle(MsgBase msgBase)
+    public static void OnMsgEnterBattle(BaseMsg msgBase)
     {
         MsgEnterBattle msg = (MsgEnterBattle)msgBase;
         EnterBattle(msg);
     }
 
-    public static void OnMsgBattleResult(MsgBase msgBase)
+    public static void OnMsgBattleResult(BaseMsg msgBase)
     {
         MsgBattleResult msg = (MsgBattleResult)msgBase;
 
-        //判断显示胜利还是失败
+        // 判断显示胜利还是失败
         bool isWin = false;
         BaseTank tank = GetCtrlTank();
-        if (tank != null && tank.team == msg.winCamp)
+        if (tank != null && tank.team == msg.winTeam)
         {
             isWin = true;
         }
@@ -145,7 +142,7 @@ public class BattleManager
         PanelManager.RemovePanel("AimPanel");
     }
 
-    public static void OnMsgLeaveBattle(MsgBase msgBase)
+    public static void OnMsgLeaveBattle(BaseMsg msgBase)
     {
         MsgLeaveBattle msg = (MsgLeaveBattle)msgBase;
 
@@ -160,7 +157,7 @@ public class BattleManager
     }
 
     // 同步位置
-    public static void OnMsgSyncTank(MsgBase msgBase)
+    public static void OnMsgSyncTank(BaseMsg msgBase)
     {
         MsgSyncTank msg = (MsgSyncTank)msgBase;
         // 不同步自己
@@ -179,7 +176,7 @@ public class BattleManager
     }
 
     // 同步开火
-    public static void OnMsgFire(MsgBase msgBase)
+    public static void OnMsgFire(BaseMsg msgBase)
     {
         MsgFire msg = (MsgFire)msgBase;
         if (msg.id == GameMain.id)
@@ -196,7 +193,7 @@ public class BattleManager
     }
 
     // 收到击中协议
-    public static void OnHitMsg(MsgBase msgBase)
+    public static void OnHitMsg(BaseMsg msgBase)
     {
         MsgHit msg = (MsgHit)msgBase;
         // 查找坦克

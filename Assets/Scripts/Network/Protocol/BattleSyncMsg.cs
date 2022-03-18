@@ -1,5 +1,5 @@
 ﻿// 同步坦克信息
-public sealed class MsgSyncTank : MsgBase
+public sealed class MsgSyncTank : BaseMsg
 {
     public MsgSyncTank() { protoName = "MsgSyncTank"; }
 
@@ -18,7 +18,7 @@ public sealed class MsgSyncTank : MsgBase
 }
 
 // 开火
-public sealed class MsgFire : MsgBase
+public sealed class MsgFire : BaseMsg
 {
     public MsgFire() { protoName = "MsgFire"; }
 
@@ -35,12 +35,12 @@ public sealed class MsgFire : MsgBase
 }
 
 // 击中（由shooter发送，可以作弊）
-public sealed class MsgHit : MsgBase
+public sealed class MsgHit : BaseMsg
 {
     public MsgHit() { protoName = "MsgHit"; }
 
     // sync
-    public string targetId = ""; 
+    public string targetId = "";
     // 击中点（该信息可以用于服务端计算伤害、辅助反作弊等）
     public float x = 0f;
     public float y = 0f;
