@@ -14,10 +14,11 @@ public class CtrlTank : BaseTank
     private const float SEARCH_INTERVAL = 1f;       // 搜索时间间隔
     private const float MAX_SEARCH_DISTANCE = 150f; // 最大搜索距离
     private const float PREVENT_INTERVAL = 2f;      // 手动操作炮塔后的保护时间
+    private const float MAX_AIM_DISTANCE = 200f;
 
     private float lastSendSyncTime = 0;  // 上一次发送同步信息的时间
     private float lastSearchTime = 0;    // 上一次搜索时间
-    private float preventSearchTime = 0; // 禁止自动瞄准到某个时间
+    private float freezeAutoAimTime = 0; // 禁止自动瞄准到某个时间
 
     public override void Init(string skinPath)
     {
@@ -85,8 +86,8 @@ public class CtrlTank : BaseTank
         lea.y += axis * Time.deltaTime * turretSpeed;
         turret.localEulerAngles = lea;
 
-        // 保护时间
-        preventSearchTime = Time.time + PREVENT_INTERVAL;
+        // 玩家手动旋转了炮塔，短时间内进入禁止自动瞄准的状态
+        freezeAutoAimTime = Time.time + PREVENT_INTERVAL;
         aimTank = null;
     }
 
@@ -148,6 +149,7 @@ public class CtrlTank : BaseTank
     }
 
     // 从炮管发射射线，获取第一个相交点
+    // 若相交于无穷远点，则取长度为MAX_AIM_DISTANCE的射线上的点
     public Vector3 getAimedDirection()
     {
         // 碰撞信息和碰撞点
@@ -157,14 +159,14 @@ public class CtrlTank : BaseTank
         Ray ray = new Ray(pos, firePoint.forward);
 
         // 射线检测
-        int layerMask = ~(1 << LayerMask.NameToLayer("Bullet"));
-        if (Physics.Raycast(ray, out RaycastHit hit, 200.0f, layerMask))
+        int layerMask = ~(1 << LayerMask.NameToLayer("Bullet")); // 小于 Bullet 层的所有层。Layer可以在Project Settings中自行设置
+        if (Physics.Raycast(ray, out RaycastHit hit, MAX_AIM_DISTANCE, layerMask))
         {
             hitPoint = hit.point;
         }
         else
         {
-            hitPoint = ray.GetPoint(200);
+            hitPoint = ray.GetPoint(MAX_AIM_DISTANCE);
         }
         return hitPoint;
     }
@@ -183,13 +185,13 @@ public class CtrlTank : BaseTank
         aimTank = null;
         foreach (BaseTank tank in BattleManager.tanks.Values)
         {
-            //同个阵营，或者是尸体
+            // 同个阵营，或者是尸体
             if (tank.team == team || tank == this || tank.IsDie())
             {
                 continue;
             }
-            // 相对位置（z）
 
+            // 相对位置（z）
             Vector3 p = firePoint.InverseTransformPoint(tank.transform.position);
             if (p.z <= 0 || p.z > MAX_SEARCH_DISTANCE)
             {
@@ -219,7 +221,7 @@ public class CtrlTank : BaseTank
     public void AutoAimUpdate()
     {
         // 保护时间
-        if (Time.time < preventSearchTime)
+        if (Time.time < freezeAutoAimTime)
         {
             return;
         }
@@ -232,7 +234,7 @@ public class CtrlTank : BaseTank
         }
         else
         {
-            // 相对位置
+            // 相对位置。加上 (0,5,0) 是高度修正
             p = firePoint.InverseTransformPoint(aimTank.transform.position + new Vector3(0, 5f, 0));
         }
         // 旋转炮塔

@@ -49,10 +49,6 @@ public class RoomPanel : BasePanel
     public void OnMsgGetRoomInfo(BaseMsg msgBase)
     {
         MsgGetRoomInfo msg = (MsgGetRoomInfo)msgBase;
-        //if (content1 == null || content2 == null)
-        //{
-        //    return;
-        //}
 
         // 清除玩家列表
         for (int i = content1.childCount - 1; i >= 0; i--)
@@ -81,7 +77,7 @@ public class RoomPanel : BasePanel
         // 创建玩家信息GameObject
         GameObject o = Instantiate(playerObj);
         o.SetActive(true);
-        //o.transform.localScale = Vector3.one;
+        o.transform.localScale = Vector3.one;
 
         // 设置阵营 1-红 2-蓝
         if (playerInfo.team == 1)

@@ -21,7 +21,6 @@ public class BattlePanel : BasePanel
 
     public override void OnShow(params object[] args)
     {
-        //寻找组件
         hpFill = skin.transform.Find("HpBar/Fill").GetComponent<Image>();
         hpText = skin.transform.Find("HpBar/HpText").GetComponent<Text>();
         camp1Text = skin.transform.Find("CampInfo/Camp1Text").GetComponent<Text>();

@@ -9,7 +9,6 @@ public static class BattleManager
 
     public static void Init()
     {
-        //添加监听
         NetManager.AddMsgListener("MsgEnterBattle", OnMsgEnterBattle);
         NetManager.AddMsgListener("MsgBattleResult", OnMsgBattleResult);
         NetManager.AddMsgListener("MsgLeaveBattle", OnMsgLeaveBattle);
@@ -58,6 +57,7 @@ public static class BattleManager
     {
         // 重置场景
         Reset();
+        Cursor.visible = false;
 
         // 关闭非游戏场景界面
         PanelManager.RemovePanel("RoomPanel"); 

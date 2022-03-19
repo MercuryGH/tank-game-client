@@ -21,7 +21,7 @@ public class HallPanel : BasePanel
 
     public override void OnInit()
     {
-        skinPath = "RoomListPanel";
+        skinPath = "HallPanel";
         layer = PanelManager.Layer.CommonPanel;
     }
 
@@ -55,7 +55,7 @@ public class HallPanel : BasePanel
 
         GameObject tankSkin = ResManager.LoadPrefab("tankPrefab");
         tankObj = (GameObject)Instantiate(tankSkin, tankCamera.transform);
-        tankObj.transform.localPosition = new Vector3(0, -2, 25);
+        tankObj.transform.localPosition = new Vector3(0, -2, 30);
         tankObj.transform.Rotate(0, 90, -30);
     }
 
@@ -119,11 +119,6 @@ public class HallPanel : BasePanel
             statusText.text = "战斗中";
         }
 
-        //btn.name = idText.text; 
-        //btn.onClick.AddListener(delegate ()
-        //{
-        //    OnJoinClick(btn.name);
-        //});
         btn.onClick.AddListener(() =>
         {
             MsgEnterRoom msg = new MsgEnterRoom
@@ -139,13 +134,6 @@ public class HallPanel : BasePanel
         MsgGetRoomList msg = new MsgGetRoomList();
         NetManager.Send(msg);
     }
-
-    //public void OnJoinClick(string idString)
-    //{
-    //    MsgEnterRoom msg = new MsgEnterRoom();
-    //    msg.id = int.Parse(idString);
-    //    NetManager.Send(msg);
-    //}
 
     private void OnMsgEnterRoom(BaseMsg msgBase)
     {
@@ -186,6 +174,6 @@ public class HallPanel : BasePanel
     public void Update()
     {
         //旋转更新坦克视图
-        tankObj.transform.Rotate(0, Time.deltaTime * 2f, 0);
+        tankObj.transform.Rotate(0, Time.deltaTime * 10f, 0);
     }
 }

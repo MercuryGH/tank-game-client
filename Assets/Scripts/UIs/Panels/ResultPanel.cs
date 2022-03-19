@@ -22,6 +22,7 @@ public class ResultPanel : BasePanel
         okBtn = skin.transform.Find("OkBtn").GetComponent<Button>();
 
         okBtn.onClick.AddListener(OnOkClick);
+        Cursor.visible = true;
 
         // 根据胜负显示不同的图片
         if (args.Length == 1)

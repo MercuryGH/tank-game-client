@@ -39,6 +39,7 @@ public class EscPanel : BasePanel
         PanelManager.RemovePanel("AimPanel");
         PanelManager.RemovePanel("BattlePanel");
 
+        Cursor.visible = true;
         Close();
     }
 }

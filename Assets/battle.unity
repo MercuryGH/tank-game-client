@@ -6632,7 +6632,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_Font: {fileID: 12800000, guid: 15dc38e99a10f344594256f855163f49, type: 3}
     m_FontSize: 14
     m_FontStyle: 0
     m_BestFit: 0
@@ -6644,7 +6644,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Ping: 19ms'
+  m_Text: 'Ping: 0ms'
 --- !u!222 &1926809654
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -6664,6 +6664,7 @@ GameObject:
   - component: {fileID: 1933191502}
   - component: {fileID: 1933191503}
   - component: {fileID: 1933191504}
+  - component: {fileID: 1933191505}
   m_Layer: 0
   m_Name: Root
   m_TagString: Untagged
@@ -6795,8 +6796,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 77c13ced43edb284192665d56a6a139d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ttl: 0
   ttlText: {fileID: 1926809653}
+--- !u!114 &1933191505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1933191501}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d258f82bf9d0d9f49b52f830e1126e03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bpm: 140
+  numBeatsPerSegment: 16
+  clips:
+  - {fileID: 8300000, guid: 45b377c4cd1f85049a89ec485e8d9a16, type: 3}
+  - {fileID: 8300000, guid: 426b0385b7231c348abffd9ec20a194e, type: 3}
 --- !u!1001 &1934470848
 PrefabInstance:
   m_ObjectHideFlags: 0

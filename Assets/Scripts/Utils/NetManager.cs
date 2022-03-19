@@ -20,8 +20,9 @@ public static class NetManager
 
     public static bool usePingPong = true;
     public const int PING_INTERVAL = 3; // 3秒 1 ping，如何
-    private static float lastPingTime = 0;
-    private static float lastPongTime = 0;
+    public static float lastPingTime = 0;
+    public static float lastPongTime = 0;
+    public static float lastPingPongInterval = 0;
 
     // 绑定到全局 TTL 显示器
     private static readonly TTLShower ttlShower = GameObject.Find("Root").GetComponent<TTLShower>();
@@ -445,11 +446,6 @@ public static class NetManager
     private static void OnMsgPong(BaseMsg msgBase)
     {
         lastPongTime = Time.time;
-        float ttl = lastPongTime - lastPingTime;
-
-        Debug.Log("Receive Pong, TTL = " + ttl);
-        int ttlInMs = (int)(ttl * 1000);
-
-        ttlShower.ttl = ttlInMs;
+        lastPingPongInterval = lastPongTime - lastPingTime;
     }
 }
